@@ -5,6 +5,11 @@
 # Default: info
 log_level = "info"
 
+# Performance stats logging interval in seconds
+# Set to 0 to disable stats logging
+# Default: 30
+stats_interval_secs = 30
+
 # TCP configuration for GCS connections
 [tcp]
 # Port to listen on for incoming GCS connections (e.g., QGroundControl)

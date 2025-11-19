@@ -1,11 +1,13 @@
 mod config;
 mod connection;
 mod mavlink;
+mod metrics;
 mod router;
 
 use config::Config;
 use connection::tcp::TcpServer;
 use connection::uart::UartConnection;
+use metrics::Metrics;
 use router::Router;
 use tokio::sync::mpsc;
 use tracing::{error, info};
@@ -46,17 +48,30 @@ async fn main() -> anyhow::Result<()> {
     info!("  Log level: {}", config.log_level);
     info!("  TCP: {}:{}", config.tcp.bind_addr, config.tcp.listen_port);
     info!("  UART devices: {}", config.uart.len());
+    info!("  Stats interval: {}s", config.stats_interval_secs);
     info!("  Routing:");
     info!("    UART->UART: {}", config.routing.allow_uart_to_uart);
     info!("    UART->TCP: {}", config.routing.allow_uart_to_tcp);
     info!("    TCP->UART: {}", config.routing.allow_tcp_to_uart);
     info!("    TCP->TCP: {}", config.routing.allow_tcp_to_tcp);
 
+    // Create metrics and start stats logger
+    let metrics = Metrics::new();
+    if config.stats_interval_secs > 0 {
+        info!(
+            "Starting performance monitoring (stats every {}s)",
+            config.stats_interval_secs
+        );
+        metrics.clone().start_stats_logger(config.stats_interval_secs);
+    } else {
+        info!("Performance monitoring disabled (stats_interval_secs = 0)");
+    }
+
     // Create router channel
     let (router_tx, router_rx) = mpsc::unbounded_channel();
 
     // Start router task
-    let router = Router::new(config.routing.clone());
+    let router = Router::new(config.routing.clone(), metrics);
     tokio::spawn(async move {
         router.run(router_rx).await;
     });

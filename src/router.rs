@@ -2,6 +2,7 @@ use crate::config::RoutingConfig;
 use crate::connection::tcp::RouterMessage;
 use crate::connection::{ConnectionId, ConnectionType, MessageSender};
 use crate::mavlink::MavFrame;
+use crate::metrics::Metrics;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
@@ -10,6 +11,7 @@ pub struct Router {
     config: RoutingConfig,
     connections: HashMap<ConnectionId, Connection>,
     sysid_map: HashMap<u8, ConnectionId>,
+    metrics: Metrics,
 }
 
 struct Connection {
@@ -19,11 +21,12 @@ struct Connection {
 }
 
 impl Router {
-    pub fn new(config: RoutingConfig) -> Self {
+    pub fn new(config: RoutingConfig, metrics: Metrics) -> Self {
         Self {
             config,
             connections: HashMap::new(),
             sysid_map: HashMap::new(),
+            metrics,
         }
     }
 
@@ -75,6 +78,9 @@ impl Router {
     fn route_frame(&mut self, source: ConnectionId, frame: MavFrame) {
         let sysid = frame.sys_id();
 
+        // Record received message
+        self.metrics.record_received();
+
         // Update sysid mapping for UART connections
         if source.conn_type == ConnectionType::Uart
             && let Some(conn) = self.connections.get_mut(&source)
@@ -98,6 +104,7 @@ impl Router {
 
         // Route to all eligible connections
         let frame_bytes = bytes::Bytes::copy_from_slice(frame.as_bytes());
+        let frame_len = frame_bytes.len();
 
         for (&dest_id, dest_conn) in &self.connections {
             // Don't send back to source
@@ -110,11 +117,19 @@ impl Router {
                 continue;
             }
 
-            // Send the frame
-            if let Err(e) = dest_conn.tx.send(frame_bytes.clone()) {
-                warn!("Failed to send frame to {}: {}", dest_id, e);
-            } else {
-                debug!("Routed frame from {} to {}", source, dest_id);
+            // Send the frame with backpressure detection
+            match dest_conn.tx.send(frame_bytes.clone()) {
+                Ok(_) => {
+                    self.metrics.record_routed(frame_len);
+                    debug!("Routed frame from {} to {}", source, dest_id);
+                }
+                Err(e) => {
+                    self.metrics.record_dropped();
+                    warn!(
+                        "BACKPRESSURE: Failed to send to {} (channel full): {}",
+                        dest_id, e
+                    );
+                }
             }
         }
     }

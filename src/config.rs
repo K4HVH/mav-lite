@@ -17,6 +17,10 @@ pub struct Config {
     /// Log level (trace, debug, info, warn, error)
     #[serde(default = "default_log_level")]
     pub log_level: String,
+
+    /// Performance stats logging interval in seconds (0 = disabled)
+    #[serde(default = "default_stats_interval")]
+    pub stats_interval_secs: u64,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -102,6 +106,10 @@ fn default_log_level() -> String {
     "info".to_string()
 }
 
+fn default_stats_interval() -> u64 {
+    30 // Log stats every 30 seconds by default
+}
+
 impl Config {
     pub fn from_file(path: &str) -> anyhow::Result<Self> {
         let content = std::fs::read_to_string(path)?;
@@ -126,6 +134,7 @@ impl Config {
             ],
             routing: RoutingConfig::default(),
             log_level: default_log_level(),
+            stats_interval_secs: default_stats_interval(),
         }
     }
 }

@@ -1,50 +1,62 @@
-# mav-lite configuration example
-# This is a high-performance MAVLink router configuration
-
-# Logging level: trace, debug, info, warn, error
-# Default: info
 log_level = "info"
+stats_interval_secs = 10
 
-# TCP configuration for GCS connections
 [tcp]
-# Port to listen on for incoming GCS connections (e.g., QGroundControl)
 listen_port = 5761
-# Bind address (0.0.0.0 = all interfaces)
 bind_addr = "0.0.0.0"
 
-# UART connections for drones
-# Add one [[uart]] section for each serial port
 [[uart]]
 path = "/dev/ttyACM0"
 baud_rate = 57600
-name = "Drone 1"
+name = "Drone 0"
 
 [[uart]]
 path = "/dev/ttyACM2"
 baud_rate = 57600
-name = "Drone 2"
+name = "Drone 1"
 
 [[uart]]
 path = "/dev/ttyACM4"
 baud_rate = 57600
+name = "Drone 2"
+
+[[uart]]
+path = "/dev/ttyACM6"
+baud_rate = 57600
 name = "Drone 3"
 
-# Add more UART connections as needed...
-# [[uart]]
-# path = "/dev/ttyUSB3"
-# baud_rate = 57600
-# name = "Drone 4"
+[[uart]]
+path = "/dev/ttyACM8"
+baud_rate = 57600
+name = "Drone 4"
 
-# Routing configuration
+[[uart]]
+path = "/dev/ttyACM10"
+baud_rate = 57600
+name = "Drone 5"
+
+[[uart]]
+path = "/dev/ttyACM12"
+baud_rate = 57600
+name = "Drone 6"
+
+[[uart]]
+path = "/dev/ttyACM14"
+baud_rate = 57600
+name = "Drone 7"
+
+[[uart]]
+path = "/dev/ttyACM16"
+baud_rate = 57600
+name = "Drone 8"
+
+[[uart]]
+path = "/dev/ttyACM18"
+baud_rate = 57600
+name = "Drone 9"
+
 [routing]
-# Allow drone-to-drone communication (usually false for multi-drone setups)
 allow_uart_to_uart = false
-
-# Allow GCS-to-GCS communication (useful for multiple GCS instances)
 allow_tcp_to_tcp = true
-
-# Allow drone-to-GCS communication (almost always true)
 allow_uart_to_tcp = true
-
-# Allow GCS-to-drone communication (almost always true)
 allow_tcp_to_uart = true
