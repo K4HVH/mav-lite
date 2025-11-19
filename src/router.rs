@@ -82,16 +82,17 @@ impl Router {
         self.metrics.record_received();
 
         // Update sysid mapping for UART connections
-        if source.conn_type == ConnectionType::Uart
-            && let Some(conn) = self.connections.get_mut(&source)
-            && conn.sysid.is_none()
-        {
-            conn.sysid = Some(sysid);
-            self.sysid_map.insert(sysid, source);
-            info!(
-                "Router: discovered sysid {} on connection {}",
-                sysid, source
-            );
+        if source.conn_type == ConnectionType::Uart {
+            if let Some(conn) = self.connections.get_mut(&source) {
+                if conn.sysid.is_none() {
+                    conn.sysid = Some(sysid);
+                    self.sysid_map.insert(sysid, source);
+                    info!(
+                        "Router: discovered sysid {} on connection {}",
+                        sysid, source
+                    );
+                }
+            }
         }
 
         debug!(
