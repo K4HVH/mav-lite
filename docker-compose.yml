@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mav-lite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mav-lite:latest
+    container_name: mav-lite
+    restart: unless-stopped
+
+    network_mode: host
+
+    privileged: true
+
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - /dev:/dev
+
+    environment:
+      - RUST_LOG=info
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+        reservations:
+          cpus: '1'
+          memory: 256M
