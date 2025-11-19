@@ -11,6 +11,7 @@ A high-performance MAVLink router built in Rust, designed as a replacement for m
 - **Smart Connection Management**:
   - TCP support for GCS connections (e.g., QGroundControl)
   - UART support for drone connections
+  - **Dynamic UART discovery** - automatically finds and connects to MAVLink ports
   - Automatic reconnection for UART devices
   - Dynamic sysid discovery for UART connections
 - **Flexible Routing**: Configure routing rules to control message flow between connections
@@ -60,31 +61,37 @@ The binary will be available at `target/release/mav-lite`.
 Create a configuration file (e.g., `config.toml`):
 
 ```toml
-# TCP configuration for GCS connections
 [tcp]
-listen_port = 5760
+listen_port = 5761
 bind_addr = "0.0.0.0"
 
-# UART connections for drones
+# Dynamic UART discovery - automatically finds MAVLink ports
+[uart_discovery]
+enabled = true
+device_pattern = "/dev/ttyACM*"
+baud_rate = 57600
+detection_timeout_secs = 5
+rescan_interval_secs = 30
+
+# Routing rules
+[routing]
+allow_uart_to_uart = false
+allow_tcp_to_tcp = true
+allow_uart_to_tcp = true
+allow_tcp_to_uart = true
+```
+
+**Or** use static UART configuration (disable `uart_discovery` first):
+
+```toml
+[uart_discovery]
+enabled = false
+
 [[uart]]
 path = "/dev/ttyUSB0"
 baud_rate = 57600
 name = "Drone 1"
-
-[[uart]]
-path = "/dev/ttyUSB1"
-baud_rate = 57600
-name = "Drone 2"
-
-# Routing rules
-[routing]
-allow_uart_to_uart = false  # Prevent drone-to-drone communication
-allow_tcp_to_tcp = true     # Allow GCS-to-GCS communication
-allow_uart_to_tcp = true    # Allow drone-to-GCS communication
-allow_tcp_to_uart = true    # Allow GCS-to-drone communication
 ```
-
-See `config.example.toml` for a complete example.
 
 ### Running
 
@@ -105,13 +112,19 @@ RUST_LOG=debug cargo run -- config.toml
 - `listen_port`: Port to listen on for incoming GCS connections (default: 5760)
 - `bind_addr`: Bind address (default: "0.0.0.0" for all interfaces)
 
-### UART Configuration
+### Dynamic UART Discovery
 
-Each `[[uart]]` section defines a serial connection:
+- `enabled`: Enable dynamic discovery
+- `device_pattern`: Glob pattern (e.g., "/dev/ttyACM*")
+- `baud_rate`: Baud rate for discovered devices
+- `detection_timeout_secs`: Time to test each port for MAVLink traffic
+- `rescan_interval_secs`: How often to scan for new devices
 
-- `path`: Serial device path (e.g., "/dev/ttyUSB0")
-- `baud_rate`: Baud rate (default: 57600)
-- `name`: Optional friendly name for logging
+### Static UART Configuration
+
+- `path`: Device path (e.g., "/dev/ttyUSB0")
+- `baud_rate`: Baud rate
+- `name`: Optional friendly name
 
 ### Routing Configuration
 
@@ -153,14 +166,11 @@ allow_tcp_to_uart = true
 allow_uart_to_tcp = true
 ```
 
-## Dynamic UART Connection Handling
+## UART Modes
 
-mav-lite handles UART connections robustly:
+**Dynamic Discovery**: Automatically scans `/dev/ttyACM*` (or pattern) and tests each port for MAVLink traffic. Only connects to ports with valid MAVLink data.
 
-- **Auto-Discovery**: System IDs are discovered dynamically as messages arrive
-- **Partial Connections**: Works with any number of UART devices connected
-- **Auto-Reconnect**: Automatically retries failed connections every 5 seconds
-- **Hot-Plug Support**: Can handle devices being disconnected and reconnected
+**Static Config**: Manually specify device paths in config.
 
 ## Logging
 

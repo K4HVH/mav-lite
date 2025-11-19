@@ -1,5 +1,6 @@
 pub mod tcp;
 pub mod uart;
+pub mod uart_discovery;
 
 use std::fmt;
 use tokio::sync::mpsc;

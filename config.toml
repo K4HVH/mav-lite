@@ -5,55 +5,12 @@ stats_interval_secs = 10
 listen_port = 5761
 bind_addr = "0.0.0.0"
 
-[[uart]]
-path = "/dev/ttyACM0"
+[uart_discovery]
+enabled = true
+device_pattern = "/dev/ttyACM*"
 baud_rate = 57600
-name = "Drone 0"
-
-[[uart]]
-path = "/dev/ttyACM2"
-baud_rate = 57600
-name = "Drone 1"
-
-[[uart]]
-path = "/dev/ttyACM4"
-baud_rate = 57600
-name = "Drone 2"
-
-[[uart]]
-path = "/dev/ttyACM6"
-baud_rate = 57600
-name = "Drone 3"
-
-[[uart]]
-path = "/dev/ttyACM8"
-baud_rate = 57600
-name = "Drone 4"
-
-[[uart]]
-path = "/dev/ttyACM10"
-baud_rate = 57600
-name = "Drone 5"
-
-[[uart]]
-path = "/dev/ttyACM12"
-baud_rate = 57600
-name = "Drone 6"
-
-[[uart]]
-path = "/dev/ttyACM14"
-baud_rate = 57600
-name = "Drone 7"
-
-[[uart]]
-path = "/dev/ttyACM16"
-baud_rate = 57600
-name = "Drone 8"
-
-[[uart]]
-path = "/dev/ttyACM18"
-baud_rate = 57600
-name = "Drone 9"
+detection_timeout_secs = 5
+rescan_interval_secs = 30
 
 [routing]
 allow_uart_to_uart = false

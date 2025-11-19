@@ -7,6 +7,7 @@ mod router;
 use config::Config;
 use connection::tcp::TcpServer;
 use connection::uart::UartConnection;
+use connection::uart_discovery::UartDiscovery;
 use metrics::Metrics;
 use router::Router;
 use tokio::sync::mpsc;
@@ -48,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
     info!("  Log level: {}", config.log_level);
     info!("  TCP: {}:{}", config.tcp.bind_addr, config.tcp.listen_port);
     info!("  UART devices: {}", config.uart.len());
+    info!("  UART discovery: {}", if config.uart_discovery.enabled { "enabled" } else { "disabled" });
     info!("  Stats interval: {}s", config.stats_interval_secs);
     info!("  Routing:");
     info!("    UART->UART: {}", config.routing.allow_uart_to_uart);
@@ -76,15 +78,26 @@ async fn main() -> anyhow::Result<()> {
         router.run(router_rx).await;
     });
 
-    // Start UART connections
-    for (idx, uart_cfg) in config.uart.iter().enumerate() {
+    // Start static UART connections
+    let mut next_uart_id = 0;
+    for uart_cfg in &config.uart {
         let uart_conn = UartConnection::new(
-            idx,
+            next_uart_id,
             uart_cfg.path.clone(),
             uart_cfg.baud_rate,
             uart_cfg.name.clone(),
         );
         uart_conn.start(router_tx.clone()).await;
+        next_uart_id += 1;
+    }
+
+    // Start dynamic UART discovery if enabled
+    if config.uart_discovery.enabled {
+        let discovery = UartDiscovery::new(config.uart_discovery.clone(), next_uart_id);
+        let discovery_tx = router_tx.clone();
+        tokio::spawn(async move {
+            discovery.run(discovery_tx).await;
+        });
     }
 
     // Start TCP server

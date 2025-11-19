@@ -10,6 +10,10 @@ pub struct Config {
     #[serde(default)]
     pub uart: Vec<UartConfig>,
 
+    /// Dynamic UART discovery settings
+    #[serde(default)]
+    pub uart_discovery: UartDiscoveryConfig,
+
     /// Routing rules
     #[serde(default)]
     pub routing: RoutingConfig,
@@ -54,6 +58,41 @@ pub struct UartConfig {
 
     /// Optional friendly name for logging
     pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct UartDiscoveryConfig {
+    /// Enable dynamic UART discovery
+    #[serde(default)]
+    pub enabled: bool,
+
+    /// Device pattern to scan (e.g., "/dev/ttyACM*", "/dev/ttyUSB*")
+    #[serde(default = "default_device_pattern")]
+    pub device_pattern: String,
+
+    /// Baud rate for discovered devices
+    #[serde(default = "default_baud_rate")]
+    pub baud_rate: u32,
+
+    /// Timeout in seconds to detect MAVLink traffic on a port
+    #[serde(default = "default_detection_timeout")]
+    pub detection_timeout_secs: u64,
+
+    /// Interval in seconds to rescan for new devices
+    #[serde(default = "default_rescan_interval")]
+    pub rescan_interval_secs: u64,
+}
+
+impl Default for UartDiscoveryConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            device_pattern: default_device_pattern(),
+            baud_rate: default_baud_rate(),
+            detection_timeout_secs: default_detection_timeout(),
+            rescan_interval_secs: default_rescan_interval(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -110,6 +149,18 @@ fn default_stats_interval() -> u64 {
     30 // Log stats every 30 seconds by default
 }
 
+fn default_device_pattern() -> String {
+    "/dev/ttyACM*".to_string()
+}
+
+fn default_detection_timeout() -> u64 {
+    5 // Wait up to 5 seconds for MAVLink traffic
+}
+
+fn default_rescan_interval() -> u64 {
+    30 // Rescan for new devices every 30 seconds
+}
+
 impl Config {
     pub fn from_file(path: &str) -> anyhow::Result<Self> {
         let content = std::fs::read_to_string(path)?;
@@ -132,6 +183,7 @@ impl Config {
                     name: Some("Drone 2".to_string()),
                 },
             ],
+            uart_discovery: UartDiscoveryConfig::default(),
             routing: RoutingConfig::default(),
             log_level: default_log_level(),
             stats_interval_secs: default_stats_interval(),
