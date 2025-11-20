@@ -16,13 +16,13 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Load configuration first (before logging, so we can use config log level)
+    // Load config
     let config = match std::env::args().nth(1) {
         Some(path) => Config::from_file(&path)?,
         None => Config::example(),
     };
 
-    // Initialize tracing with config log level (RUST_LOG env var overrides if set)
+    // Init tracing
     let log_filter = std::env::var("RUST_LOG")
         .ok()
         .or_else(|| Some(config.log_level.clone()))
