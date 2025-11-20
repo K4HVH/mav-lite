@@ -13,6 +13,9 @@ services:
 
     privileged: true
 
+    group_add:
+      - dialout
+
     volumes:
       - ./config.toml:/app/config.toml:ro
       - /dev:/dev
